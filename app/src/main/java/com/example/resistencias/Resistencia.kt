@@ -5,17 +5,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,10 +38,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
-
 @Composable
 fun Resistencias() {
-    val colores = listOf("Negro", "Marron", "Rojo", "Naranja", "Amarillo", "Verde", "Azul", "Violeta", "Gris","Blanco")
+    val coloresBanda1y2 = listOf("Negro", "Marron", "Rojo", "Naranja", "Amarillo", "Verde", "Azul", "Violeta", "Gris", "Blanco")
+    val coloresBanda3 = listOf("Negro", "Marron", "Rojo", "Naranja", "Amarillo")
+    val coloresBanda4 = listOf("Dorado", "Plateado", "Blanco")
+
     val coloresMap = mapOf(
         "Negro" to Color.Black,
         "Marron" to Color(0xFF5E3C23),
@@ -56,7 +54,9 @@ fun Resistencias() {
         "Azul" to Color.Blue,
         "Violeta" to Color(0xFF673AB7),
         "Gris" to Color.Gray,
-        "Blanco" to Color.White
+        "Blanco" to Color.White,
+        "Dorado" to Color(0xFFFFD700),
+        "Plateado" to Color(0xFFC0C0C0)
     )
 
     val valorMap = mapOf(
@@ -78,6 +78,12 @@ fun Resistencias() {
         "Blanco" to "±20%"
     )
 
+    val coloresPorBanda = listOf(
+        coloresBanda1y2,
+        coloresBanda1y2,
+        coloresBanda3,
+        coloresBanda4
+    )
 
     val bandasSeleccionadas = remember { mutableStateListOf("Negro", "Negro", "Negro", "Dorado") }
     var resultado by remember { mutableStateOf("") }
@@ -85,10 +91,11 @@ fun Resistencias() {
     Surface(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .padding(16.dp),
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 8.dp,
-        color = Color(0xFFC4E1F6)
+        color = Color(0xFFC0E0F8)
     ) {
         Column(
             modifier = Modifier
@@ -99,12 +106,12 @@ fun Resistencias() {
                 text = "Seleccione el color de las bandas de izquierda a derecha",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF3F51B5)
+                color = Color(0xFF000209)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-
+            // Nombres de las bandas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -116,29 +123,33 @@ fun Resistencias() {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-
+            // Selectores de color
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                repeat(4) { index ->
+                repeat(4) { seleccion ->
                     ColorSelector(
-                        colores = coloresPorBanda[index],
+                        colores = coloresPorBanda[seleccion],
                         coloresMap = coloresMap,
-                        seleccion = bandasSeleccionadas[index],
-                        onSeleccionChange = { bandasSeleccionadas[index] = it }
+                        seleccion = bandasSeleccionadas[seleccion],
+                        onSeleccionChange = { bandasSeleccionadas[seleccion] = it }
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-
+            // Mostrar valor debajo de cada selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                repeat(4) {
+                repeat(4) { seleccion ->
+                    val color = bandasSeleccionadas[seleccion]
+                    val texto = when (seleccion) {
+                        3 -> "Tolerancia: ${toleranciaMap[color] ?: "-"}"
+                        else -> "Valor: ${valorMap[color] ?: "-"}"
                     }
                     Box(modifier = Modifier.width(72.dp), contentAlignment = Alignment.Center) {
                         Text(texto, fontSize = 12.sp)
@@ -148,14 +159,33 @@ fun Resistencias() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Resultado
+            if (resultado.isNotEmpty()) {
+                Text(
+                    text = "Resistencia total: $resultado",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF000103)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-
+            // Botón consultar
             Button(
                 onClick = {
                     val valor1 = valorMap[bandasSeleccionadas[0]] ?: 0
                     val valor2 = valorMap[bandasSeleccionadas[1]] ?: 0
-                    val multiplicador = Math.pow
-            {
+                    val multiplicador = Math.pow(
+                        10.0,
+                        (valorMap[bandasSeleccionadas[2]] ?: 0).toDouble()
+                    )
+                    val tolerancia = toleranciaMap[bandasSeleccionadas[3]] ?: ""
+                    val resistencia = ((valor1 * 10 + valor2) * multiplicador).toInt()
+                    resultado = "$resistencia Ω $tolerancia"
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3F51B5)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Text("Consultar", color = Color.White)
             }
         }
@@ -179,8 +209,9 @@ fun ColorSelector(
                 .width(72.dp)
                 .onGloballyPositioned { coordinates ->
                     buttonSize = coordinates.size.toSize()
-                }
-        ) {
+                },
+            shape = RoundedCornerShape(0.dp)
+        ){
             Text(text = seleccion, fontSize = 10.sp)
         }
 
