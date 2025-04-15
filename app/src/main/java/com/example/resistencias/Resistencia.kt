@@ -170,7 +170,7 @@ fun Resistencias() {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Botón consultar
+
             Button(
                 onClick = {
                     val valor1 = valorMap[bandasSeleccionadas[0]] ?: 0
